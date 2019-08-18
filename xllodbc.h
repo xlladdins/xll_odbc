@@ -1,12 +1,7 @@
 // xllodbc.h
 //#define EXCEL12
-#include "../xll8/xll/xll.h"
+#include "xll12/xll/xll.h"
 #include "odbc.h"
-
-typedef xll::traits<XLOPERX>::xchar xchar;
-typedef xll::traits<XLOPERX>::xcstr xcstr;
-typedef xll::traits<XLOPERX>::xword xword;
-typedef xll::traits<XLOPERX>::xstring xstring;
 
 #define ODBC_STR(o) reinterpret_cast<SQLTCHAR*>(o.val.str + 1), o.val.str[0]
 #define ODBC_BUF0(o) ODBC_STR(o), 0
@@ -21,9 +16,9 @@ inline bool ODBC_ERROR(ODBC::Handle<T>& h)
 
 	for (SQLSMALLINT i = 1; dr.Get(i) != SQL_NO_DATA; ++i) {
 		rec.append(dr.state);
-		rec.append((SQLTCHAR*)_T(": "));
+		rec.append((SQLTCHAR*)L": ");
 		rec.append(dr.message);
-		rec.append((SQLTCHAR*)_T("\n"));
+		rec.append((SQLTCHAR*)L"\n");
 	}
 
 	if (rec.size())
@@ -36,16 +31,16 @@ namespace ODBC {
 
 	template<class T>
 	class lenptr {
-		OPERX& o_;
+		xll::OPER& o_;
 		T len;
 	public:
-		lenptr(OPERX& o)
+		lenptr(xll::OPER& o)
 			: o_(o), len(0)
 		{ }
 		~lenptr()
 		{
 			if (len)
-				o_.val.str[0] = static_cast<xchar>(len);
+				o_.val.str[0] = static_cast<wchar_t>(len);
 		}
 		operator T*()
 		{
@@ -61,20 +56,20 @@ namespace ODBC {
 
 		return n;
 	}
-	inline SQLRETURN GetNum(ODBC::Stmt& stmt, SQLUSMALLINT n, OPERX& o)
+	inline SQLRETURN GetNum(ODBC::Stmt& stmt, SQLUSMALLINT n, xll::OPER& o)
 	{
 		o.xltype = xltypeNum;
 
 		return  SQLGetData(stmt, n + 1, SQL_C_DOUBLE, &o.val.num, sizeof(double), 0);
 	}
-	inline SQLRETURN GetStr(ODBC::Stmt& stmt, SQLUSMALLINT n, OPERX& o, SQLULEN len = 0)
+	inline SQLRETURN GetStr(ODBC::Stmt& stmt, SQLUSMALLINT n, xll::OPER& o, SQLULEN len = 0)
 	{
 		if (len != 0)
-			o = OPERX(_T(""), static_cast<xchar>(len));
+			o = xll::OPER(L"", static_cast<wchar_t>(len));
 
 		return SQLGetData(stmt, n + 1, SQL_C_TCHAR, ODBC_BUF0(o));
 	}
-	inline SQLRETURN GetDate(ODBC::Stmt& stmt, SQLUSMALLINT n, OPERX& o, SQLULEN len = 0)
+	inline SQLRETURN GetDate(ODBC::Stmt& stmt, SQLUSMALLINT n, xll::OPER& o, SQLULEN len = 0)
 	{
 		SQLRETURN rc(SQL_ERROR);
 		SQL_TIMESTAMP_STRUCT ts;
@@ -83,28 +78,26 @@ namespace ODBC {
 		if (SQL_SUCCEEDED(rc)) {
 			o = 0;
 			if (ts.year)
-				o += XLL_XLF(Date, OPERX(ts.year), OPERX(ts.month), OPERX(ts.day));
+				o &= xll::Excel(xlfDate, xll::OPER(ts.year), xll::OPER(ts.month), xll::OPER(ts.day));
 			if (ts.hour || ts.minute || ts.second)
-				o += XLL_XLF(Time, OPERX(ts.hour), OPERX(ts.minute), OPERX(ts.second));
+				o &= xll::Excel(xlfTime, xll::OPER(ts.hour), xll::OPER(ts.minute), xll::OPER(ts.second));
 		}
 
 		return rc;
 	}
 
-	struct Bind : public OPERX {
-		typedef xll::traits<XLOPERX>::xchar xchar;
-		typedef xll::traits<XLOPERX>::xword xword;
-		OPERX header;
+	struct Bind : public xll::OPER {
+		xll::OPER header;
 		std::vector<SQLSMALLINT> type, nullable, digits;
 		std::vector<SQLULEN> len;
 		std::vector<std::function<SQLRETURN(SQLSMALLINT)>> GetData;
 		ODBC::Stmt& stmt_;
 		Bind(ODBC::Stmt& stmt)
-			: OPERX(1, NumResultsCols(stmt)), header(1,size()), stmt_(stmt), GetData(size()), 
+			: xll::OPER(1, NumResultsCols(stmt)), header(1,size()), stmt_(stmt), GetData(size()), 
 				type(size()), nullable(size()), digits(size()), len(size())
 		{
-			for (xword i = 0; i < size(); ++i) {
-				header[i] = OPERX(_T(""), 255);
+			for (WORD i = 0; i < size(); ++i) {
+				header[i] = xll::OPER(L"", 255);
 
 				ensure (SQL_SUCCEEDED(SQLDescribeCol(stmt, i + 1, ODBC_BUFS(header[i]), &type[i], &len[i], &digits[i], &nullable[i]))
 					|| ODBC_ERROR(stmt));
@@ -112,7 +105,7 @@ namespace ODBC {
 				switch (type[i]) {
 				case SQL_CHAR: case SQL_VARCHAR: case SQL_WCHAR: case SQL_WVARCHAR: 
 					//!!! check for long strings!!!
-					operator[](i) = OPERX(_T(""), static_cast<xchar>(len[i]));
+					operator[](i) = xll::OPER(L"", static_cast<wchar_t>(len[i]));
 					GetData[i] = [this](SQLSMALLINT i) { return this->GetStr(i); };
 
 					break;
@@ -151,7 +144,7 @@ namespace ODBC {
 		}
 		void getData()
 		{
-			for (xword i = 0; i < size(); ++i)
+			for (WORD i = 0; i < size(); ++i)
 				ensure (SQL_SUCCEEDED(GetData[i](i)) || ODBC_ERROR(stmt_));
 		}
 	};

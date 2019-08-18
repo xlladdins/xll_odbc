@@ -2,99 +2,95 @@
 #include "xllrange.h"
 
 #ifndef CATEGORY
-#define CATEGORY _T("XLL")
+#define CATEGORY L"XLL"
 #endif
 
 using namespace xll;
 
-typedef traits<XLOPERX>::xword xword;
-typedef traits<XLOPERX>::xcstr xcstr;
-typedef traits<XLOPERX>::xstring xstring;
-
-static AddInX X_(xai_range_set)(
-	FunctionX(XLL_HANDLEX, TX_("?xll_range_set"), _T("RANGE.SET"))
-	.Range(_T("Range"), _T("is a range."))
+static AddIn xai_range_set(
+	Function(XLL_HANDLE, L"?xll_range_set", L"RANGE.SET")
+	.Arg(XLL_LPOPER, L"Range", L"is a range.")
 	.Uncalced()
 	.Category(CATEGORY)
-	.FunctionHelp(_T("Return a handle to Range."))
+	.FunctionHelp(L"Return a handle to Range.")
 );
-HANDLEX WINAPI X_(xll_range_set)(LPOPERX px)
+HANDLEX WINAPI xll_range_set(LPOPER px)
 {
 #pragma XLLEXPORT
-	return handle<OPERX>(new OPERX(*px)).get();
+	return handle<OPER>(new OPER(*px)).get();
 }
 
-static AddInX X_(xai_range_get)(
-	FunctionX(XLL_LPOPERX, TX_("?xll_range_get"), _T("RANGE.GET"))
-	.Handle(_T("Handle"), _T("is a handle to a range."))
+static AddIn xai_range_get(
+	Function(XLL_LPOPER, L"?xll_range_get", L"RANGE.GET")
+	.Arg(XLL_HANDLE, L"Handle", L"is a handle to a range.")
 	.Category(CATEGORY)
-	.FunctionHelp(_T("Return the range correponding to Handle."))
+	.FunctionHelp(L"Return the range correponding to Handle.")
 );
-LPOPERX WINAPI X_(xll_range_get)(HANDLEX h)
+LPOPER WINAPI xll_range_get(HANDLEX h)
 {
 #pragma XLLEXPORT
-	return handle<OPERX>(h, false).ptr();
+	return handle<OPER>(h).ptr();
 }
 
-static AddInX X_(xai_range_join)(
-	FunctionX(XLL_LPOPERX, TX_("?xll_range_join"), _T("RANGE.JOIN"))
-	.Range(_T("Range"), _T("is a range."))
-	.Str(_T("FS"), _T("is the field separator."))
-	.Str(_T("RS"), _T("is the record separator."))
+static AddIn xai_range_join(
+	Function(XLL_LPOPER, L"?xll_range_join", L"RANGE.JOIN")
+	.Arg(XLL_LPOPER, L"Range", L"is a range.")
+	.Arg(XLL_CSTRING, L"FS", L"is the field separator.")
+    .Arg(XLL_CSTRING, L"RS", L"is the record separator.")
 	.Category(CATEGORY)
-	.FunctionHelp(_T("Join Range using field and record separators."))
+	.FunctionHelp(L"Join Range using field and record separators.")
 );
-LPOPERX WINAPI X_(xll_range_join)(const LPOPERX px, xcstr fs, xcstr rs)
+LPOPER WINAPI xll_range_join(const LPOPER px, const wchar_t* fs, const wchar_t* rs)
 {
 #pragma XLLEXPORT
-	static OPERX r;
+	static OPER r;
 
 	try {
-		OPERX FS(fs);
-		OPERX RS(rs);
-		const OPERX& x(*px);
+		OPER FS(fs);
+		OPER RS(rs);
+		const OPER& x(*px);
 
 		r = x[0];
-		for (xword i = 1; i < x.size(); ++i) {
+		for (WORD i = 1; i < x.size(); ++i) {
 			if (i%x.columns() == 0)
-				r = XLL_XLF(Concatenate, r, RS);
+				r = r & RS;
 			else
-				r = XLL_XLF(Concatenate, r, FS);
+				r = r & FS;
 
-			r = XLL_XLF(Concatenate, r, x[i]);
+			r = r & x[i];
 		}
 	}
 	catch (const std::exception& ex) {
 		XLL_ERROR(ex.what());
 
-		r = OPERX(xlerr::NA);
+		r = OPER(xlerr::NA);
 	}
 
 	return &r;
 }
 
-static AddInX X_(xai_range_split)(
-	FunctionX(XLL_LPOPERX, TX_("?xll_range_split"), _T("RANGE.SPLIT"))
-	.PStr(_T("String"), _T("is a string."))
-	.Str(_T("FS"), _T("is a string of field separators."))
-	.Str(_T("RS"), _T("is a string of record separators."))
+static AddIn xai_range_split(
+	Function(XLL_LPOPER, L"?xll_range_split", L"RANGE.SPLIT")
+	.Arg(XLL_PSTRING, L"String", L"is a string.")
+	.Arg(XLL_CSTRING, L"FS", L"is a string of field separators.")
+	.Arg(XLL_CSTRING, L"RS", L"is a string of record separators.")
 	.Category(CATEGORY)
-	.FunctionHelp(_T("Split String using field and record separators."))
+	.FunctionHelp(L"Split String using field and record separators.")
 );
-LPOPERX WINAPI X_(xll_range_split)(xcstr str, xcstr fs, xcstr rs)
+LPOPER WINAPI xll_range_split(const wchar_t* str, const wchar_t* fs, const wchar_t* rs)
 {
 #pragma XLLEXPORT
-	static OPERX o;
+	static OPER o;
 
 	try {
 		if (!*rs) {
 			o = split(str + 1, str[0], fs);
 		}
 		else {
-			OPERX r = split(str + 1, str[0], rs);
+			OPER r = split(str + 1, str[0], rs);
 			o.resize(0,0);
-			for (xword i = 0; i < r.size(); ++i) {
-				OPERX f = split(r[i].val.str + 1, r[i].val.str[0], fs);
+			for (WORD i = 0; i < r.size(); ++i) {
+				OPER f = split(r[i].val.str + 1, r[i].val.str[0], fs);
 				o.push_back(f.resize(1, f.size()));
 			}
 		}
@@ -102,7 +98,7 @@ LPOPERX WINAPI X_(xll_range_split)(xcstr str, xcstr fs, xcstr rs)
 	catch (const std::exception& ex) {
 		XLL_ERROR(ex.what());
 
-		o = OPERX(xlerr::NA);
+		o = OPER(xlerr::NA);
 	}
 
 	return &o;

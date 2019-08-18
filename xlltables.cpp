@@ -64,20 +64,20 @@ Varchar
  
 A description of the table.
 */ 
-static AddInX xai_odbc_tables(
-	FunctionX(XLL_LPOPERX, _T("?xll_odbc_tables"), _T("ODBC.TABLES"))
-	.Handle(_T("Dbc"), _T("is a handle to a database connection."))
-	.Arg(XLL_CSTRINGX, _T("Catalog"), _T("is the optional catalog pattern. Default is \"%\""), _T("%")) 
-	.Arg(XLL_CSTRINGX, _T("Schema"), _T("is the optional schema pattern. Default is \"%\""), _T("%")) 
-	.Arg(XLL_CSTRINGX, _T("Table"), _T("is the optional table pattern. Default is \"%\""), _T("%")) 
-	.Arg(XLL_CSTRINGX, _T("Type"), _T("is the optional type list. Default is \"%\""),  _T("%"))
-	.Category(_T("ODBC"))
-	.FunctionHelp(_T("Return table information"))
+static AddIn xai_odbc_tables(
+	Function(XLL_LPOPER, L"?xll_odbc_tables", L"ODBC.TABLES")
+	.Arg(XLL_HANDLE, L"Dbc", L"is a handle to a database connection.")
+	.Arg(XLL_CSTRING, L"Catalog", L"is the optional catalog pattern. Default is \"%\"", L"%") 
+	.Arg(XLL_CSTRING, L"Schema", L"is the optional schema pattern. Default is \"%\"", L"%") 
+	.Arg(XLL_CSTRING, L"Table", L"is the optional table pattern. Default is \"%\"", L"%") 
+	.Arg(XLL_CSTRING, L"Type", L"is the optional type list. Default is \"%\"",  L"%")
+	.Category(L"ODBC")
+	.FunctionHelp(L"Return table information")
 );
-LPXLOPERX WINAPI xll_odbc_tables(HANDLEX h, SQLTCHAR* cat, SQLTCHAR* schem, SQLTCHAR* name, SQLTCHAR* type)
+LPOPER WINAPI xll_odbc_tables(HANDLEX h, SQLTCHAR* cat, SQLTCHAR* schem, SQLTCHAR* name, SQLTCHAR* type)
 {
 #pragma XLLEXPORT
-	static OPERX o;
+	static OPER o;
 
 	try {
 		o.resize(0,0);
@@ -89,9 +89,9 @@ LPXLOPERX WINAPI xll_odbc_tables(HANDLEX h, SQLTCHAR* cat, SQLTCHAR* schem, SQLT
 
 		ensure (SQL_SUCCEEDED(SQLTables(stmt, cat, SQL_NTS, schem, SQL_NTS, name, SQL_NTS, type, SQL_NTS)) || ODBC_ERROR(stmt));
 
-		OPERX row(1, 5);
-		for (xword i = 0; i < 5; ++i) {
-			row[i] = OPERX(_T(""), 255);
+		OPER row(1, 5);
+		for (WORD i = 0; i < 5; ++i) {
+			row[i] = OPER(L"", 255);
 			ensure (SQL_SUCCEEDED(SQLBindCol(stmt, i + 1, SQL_C_CHAR, ODBC_BUFI(row[i]))) || ODBC_ERROR(stmt));
 		}
 
@@ -102,11 +102,11 @@ LPXLOPERX WINAPI xll_odbc_tables(HANDLEX h, SQLTCHAR* cat, SQLTCHAR* schem, SQLT
 	catch (const std::exception& ex) {
 		XLL_ERROR(ex.what());
 
-		o = OPERX(xlerr::NA);
+		o = OPER(xlerr::NA);
 	}
 
-	if (o == OPERX())
-		o = OPERX(xlerr::Null);
+	if (o == OPER())
+		o = OPER(xlerr::Null);
 
 	return &o;
 }

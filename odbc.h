@@ -1,5 +1,5 @@
 // odbc.h - platform independent ODBC code
-#include "../xll8/xll/ensure.h"
+#include "xll12/xll/ensure.h"
 #include <Windows.h>
 #include <sqlext.h>
 
@@ -145,12 +145,14 @@ namespace ODBC {
 
 	class Dbc : public Handle<SQL_HANDLE_DBC> {
 		SQLTCHAR connect_[1024];
-		Dbc(const Dbc&);
-		Dbc& operator=(const Dbc&);
 	public:
 		Dbc()
 			: Handle<SQL_HANDLE_DBC>(Env())
 		{ }
+        Dbc(const Dbc&) = delete;
+        Dbc& operator=(const Dbc&) = delete;
+        ~Dbc()
+        { }
 #ifdef _WINDOWS
 		SQLRETURN DriverConnect(const SQLTCHAR* connect, SQLUSMALLINT complete = SQL_DRIVER_COMPLETE)
 		{
@@ -177,13 +179,13 @@ namespace ODBC {
 	};
 
 	class Stmt : public Handle<SQL_HANDLE_STMT> {
-		Stmt(const Stmt&);
-		Stmt& operator=(const Stmt&);
 	public:
 		Stmt(const Dbc& dbc)
 			: Handle<SQL_HANDLE_STMT>(dbc)
 		{ }
-		~Stmt()
+        Stmt(const Stmt&) = delete;
+        Stmt& operator=(const Stmt&) = delete;
+        ~Stmt()
 		{
 			SQLFreeStmt(*this, SQL_CLOSE);
 		}
