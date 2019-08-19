@@ -35,7 +35,8 @@ namespace ODBC {
 	class DiagRec {
 		const Handle<T>& h_;
 	public:
-		SQLTCHAR state[6], message[SQL_MAX_MESSAGE_LENGTH]; 
+        SQLTCHAR state[6] = { 0 };
+        SQLTCHAR message[SQL_MAX_MESSAGE_LENGTH] = { 0 };
 		SQLINTEGER error;
 		SQLRETURN rc;
 		DiagRec(const Handle<T>& h)
@@ -78,7 +79,7 @@ namespace ODBC {
 	struct field_traits {
 		static const SQLSMALLINT len;
 	};
-#define ODBC_FIELD_TRAITS(t) template<> struct field_traits<SQL ## t > { static const SQL ## t len = SQL_IS_ ## t ; };
+#define ODBC_FIELD_TRAITS(t) template<> struct field_traits<SQL ## t > { static const SQL ## t len = static_cast<SQL ## t>(SQL_IS_ ## t) ; };
 	ODBC_FIELD_TRAITS(SMALLINT)
 	ODBC_FIELD_TRAITS(USMALLINT)
 	ODBC_FIELD_TRAITS(INTEGER)
@@ -144,7 +145,7 @@ namespace ODBC {
 	};
 
 	class Dbc : public Handle<SQL_HANDLE_DBC> {
-		SQLTCHAR connect_[1024];
+        SQLTCHAR connect_[1024] = { 0 };
 	public:
 		Dbc()
             : Handle<SQL_HANDLE_DBC>(Env())
@@ -167,11 +168,11 @@ namespace ODBC {
 		{
 			return connect_;
 		}
-		SQLSMALLINT GetInfo(SQLSMALLINT type)
+		SQLSMALLINT GetInfo(SQLSMALLINT info_type)
 		{
 			SQLSMALLINT si;
 
-			ensure (SQL_SUCCEEDED(SQLGetInfo(*this, type, &si, SQL_IS_SMALLINT, 0)));
+			ensure (SQL_SUCCEEDED(SQLGetInfo(*this, info_type, &si, SQL_IS_SMALLINT, 0)));
 
 			return si;
 		}

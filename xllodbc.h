@@ -69,7 +69,7 @@ namespace ODBC {
 
 		return SQLGetData(stmt, n + 1, SQL_C_TCHAR, ODBC_BUF0(o));
 	}
-	inline SQLRETURN GetDate(ODBC::Stmt& stmt, SQLUSMALLINT n, xll::OPER& o, SQLULEN len = 0)
+	inline SQLRETURN GetDate(ODBC::Stmt& stmt, SQLUSMALLINT n, xll::OPER& o)
 	{
 		SQLRETURN rc(SQL_ERROR);
 		SQL_TIMESTAMP_STRUCT ts;

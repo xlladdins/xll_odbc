@@ -36,15 +36,15 @@ HANDLEX WINAPI xll_odbc_connect(SQLTCHAR* dsn, SQLTCHAR* user, SQLTCHAR* pass)
 
 	return h;
 }
-/* not used
-static AddInX xai_odbc_browse_connect(
-	FunctionX(XLL_HANDLEX, L"?xll_odbc_browse_connect"), L"ODBC.CONNECT.BROWSE"))
-	.Arg(XLL_CSTRINGX, L"\"DRIVER={Microsoft Excel Driver (*.xls)}\""), L"is an odbc data source name."))
+
+static AddIn xai_odbc_browse_connect(
+	Function(XLL_HANDLE, L"?xll_odbc_browse_connect", L"ODBC.CONNECT.BROWSE")
+	.Arg(XLL_CSTRING, L"\"DRIVER={Microsoft Excel Driver (*.xls)}\"", L"is an odbc data source name.")
 	.Uncalced()
-	.Category(L"ODBC"))
-	.FunctionHelp(L"Display a list of available drivers and return a handle to an ODBC connection."))
+	.Category(L"ODBC")
+	.FunctionHelp(L"Display a list of available drivers and return a handle to an ODBC connection.")
 );
-HANDLEX WINAPI xll_odbc_browse_connect(sqlcstr conn)
+HANDLEX WINAPI xll_odbc_browse_connect(const wchar_t* conn)
 {
 #pragma XLLEXPORT
 	handlex h;
@@ -68,7 +68,7 @@ HANDLEX WINAPI xll_odbc_browse_connect(sqlcstr conn)
 
 	return h;
 }
-*/
+
 static AddInX xai_odbc_driver_connect(
 	FunctionX(XLL_HANDLE, L"?xll_odbc_driver_connect", L"ODBC.CONNECT.DRIVER")
 	.Arg(XLL_LPOPER, L"driver", L"is an odbc connection string.", L"{DRIVER=\"{SQL Server}\"}")
