@@ -20,6 +20,16 @@ static AddIn xai_odbc_drivers(
 	.Uncalced()
 	.Category(L"ODBC")
 	.FunctionHelp(L"Retrieve a range of ODBC drivers.")
+    .Documentation(LR"(
+SQLDrivers lists driver descriptions and driver attribute keywords. 
+This function is implemented only by the Driver Manager.
+</para><para>
+SQLDrivers returns the driver description in the *DriverDescription buffer. 
+It returns additional information about the driver in the *DriverAttributes buffer as a list of 
+keyword-value pairs. 
+All keywords listed in the system information for drivers will be returned for all drivers, 
+except for CreateDSN, which is used to prompt creation of data sources and therefore is optional.
+)")
 );
 LPOPER WINAPI xll_odbc_drivers(void)
 {

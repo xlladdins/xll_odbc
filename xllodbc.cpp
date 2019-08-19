@@ -3,12 +3,22 @@
 
 using namespace xll;
 
+static AddIn xai_odbc_documentation(
+    Documentation(LR"(
+This add-in provides an ODBC interface for Excel.
+)"));
+
 static AddIn xai_odbc_get_info(
 	Function(XLL_LPOPER, L"?xll_odbc_get_info", L"ODBC.GET.INFO")
 	.Arg(XLL_HANDLE, L"Dbc", L"is a handle to a database connection.")
 	.Arg(XLL_USHORT, L"Type", L"is a type from the ODBC_INFO_TYPE_* enumeration.")
 	.Category(L"ODBC")
 	.FunctionHelp(L"Returns general information about the driver and data source associated with a connection.")
+    .Documentation(LR"(
+SQLGetInfo returns general information about the driver and data source associated with a connection.
+</para><para>
+
+)")
 );
 LPOPER WINAPI xll_odbc_get_info(HANDLEX dbc, USHORT type)
 {
@@ -35,6 +45,9 @@ static AddIn xai_odbc_execute(
 	.Arg(XLL_LPOPER, L"Query", L"is a SQL query.")
 	.Category(L"ODBC")
 	.FunctionHelp(L"Return a handle to the result of a query.")
+    .Documentation(LR"(
+Prepare, execute, and fetch the results of Query.
+)")
 );
 LPOPER WINAPI xll_odbc_execute(HANDLEX dbc, LPOPER pq)
 {

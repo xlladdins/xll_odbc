@@ -6,7 +6,7 @@
 #define ODBC_STR(o) reinterpret_cast<SQLTCHAR*>(o.val.str + 1), o.val.str[0]
 #define ODBC_BUF0(o) ODBC_STR(o), 0
 #define ODBC_BUFS(o) ODBC_STR(o), ODBC::lenptr<SQLSMALLINT>(o)
-#define ODBC_BUFI(o) ODBC_STR(o), ODBC::lenptr<SQLINTEGER>(o)
+#define ODBC_BUFI(o) ODBC_STR(o), ODBC::lenptr<SQLLEN>(o)
 
 template<SQLSMALLINT T>
 inline bool ODBC_ERROR(ODBC::Handle<T>& h)

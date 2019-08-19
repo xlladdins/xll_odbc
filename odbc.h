@@ -39,7 +39,7 @@ namespace ODBC {
 		SQLINTEGER error;
 		SQLRETURN rc;
 		DiagRec(const Handle<T>& h)
-			: h_(h)
+			: h_(h), error(0), rc(SQL_SUCCESS)
 		{ }
 		DiagRec(const DiagRec&) = delete;
 		DiagRec& operator=(const DiagRec&) = delete;
@@ -147,7 +147,7 @@ namespace ODBC {
 		SQLTCHAR connect_[1024];
 	public:
 		Dbc()
-			: Handle<SQL_HANDLE_DBC>(Env())
+            : Handle<SQL_HANDLE_DBC>(Env())
 		{ }
         Dbc(const Dbc&) = delete;
         Dbc& operator=(const Dbc&) = delete;

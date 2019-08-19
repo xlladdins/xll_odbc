@@ -7,6 +7,10 @@ static AddInX xai_odbc_data_sources(
 	FunctionX(XLL_LPOPER, L"?xll_odbc_data_sources", L"ODBC.DATA.SOURCES")
 	.Category(L"ODBC")
 	.FunctionHelp(L"Retrieve a range of data sources and descriptions.")
+    .Documentation(LR"(
+SQLDataSources returns information about a data source. This function is implemented only by the Driver Manager.
+The driver determines how data source names are mapped to actual data sources.
+)")
 );
 LPOPER WINAPI xll_odbc_data_sources(void)
 {

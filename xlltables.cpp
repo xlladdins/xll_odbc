@@ -72,7 +72,12 @@ static AddIn xai_odbc_tables(
 	.Arg(XLL_CSTRING, L"Table", L"is the optional table pattern. Default is \"%\"", L"%") 
 	.Arg(XLL_CSTRING, L"Type", L"is the optional type list. Default is \"%\"",  L"%")
 	.Category(L"ODBC")
-	.FunctionHelp(L"Return table information")
+	.FunctionHelp(L"Return table information.")
+    .Documentation(LR"(
+SQLTables returns the list of table, catalog, or schema names, 
+and table types, stored in a specific data source. 
+The driver returns the information as a result set.
+)")
 );
 LPOPER WINAPI xll_odbc_tables(HANDLEX h, SQLTCHAR* cat, SQLTCHAR* schem, SQLTCHAR* name, SQLTCHAR* type)
 {
