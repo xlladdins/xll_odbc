@@ -2,7 +2,7 @@
 #define EXCEL12
 #pragma once
 #include <string.h>
-#include "xll12/xll/xll.h"
+#include "xll/xll/xll.h"
 
 // "split,strings;;on,sep" -> ["split","strings","","on","sep"]
 inline xll::OPER split(const wchar_t* s, size_t ns = 0, const wchar_t* sep = L",;")

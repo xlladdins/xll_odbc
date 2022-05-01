@@ -1,24 +1,21 @@
 // xllodbc.h
 //#define EXCEL12
-#include "xll12/xll/xll.h"
+#include "xll/xll/xll.h"
 #include "odbc.h"
 
 #define ODBC_STR(o) reinterpret_cast<SQLTCHAR*>(o.val.str + 1), o.val.str[0]
-#define ODBC_BUF0(o) ODBC_STR(o), 0
-#define ODBC_BUFS(o) ODBC_STR(o), ODBC::lenptr<SQLSMALLINT>(o)
-#define ODBC_BUFI(o) ODBC_STR(o), ODBC::lenptr<SQLLEN>(o)
 
-template<SQLSMALLINT T>
+template<enum ODBC::SQL_HANDLE T>
 inline bool ODBC_ERROR(ODBC::Handle<T>& h)
 {
-	ODBC::DiagRec<T> dr(h);
+	ODBC::DiagRec dr;
 	std::basic_string<SQLTCHAR> rec;
 
-	for (SQLSMALLINT i = 1; dr.Get(i) != SQL_NO_DATA; ++i) {
+	for (SQLSMALLINT i = 1; h.Get(i, dr) != SQL_NO_DATA; ++i) {
 		rec.append(dr.state);
-		rec.append((SQLTCHAR*)L": ");
+		rec.append({ ':', ' ' });
 		rec.append(dr.message);
-		rec.append((SQLTCHAR*)L"\n");
+		//rec.append('\n');
 	}
 
 	if (rec.size())
@@ -26,7 +23,7 @@ inline bool ODBC_ERROR(ODBC::Handle<T>& h)
 
 	return false;
 }
-
+#if 0
 namespace ODBC {
 
 	template<class T>
@@ -47,27 +44,19 @@ namespace ODBC {
 			return &len;
 		}
 	};
-
-	inline SQLSMALLINT NumResultsCols(ODBC::Stmt& stmt)
-	{
-		SQLSMALLINT n;
-
-		ensure (SQL_SUCCEEDED(SQLNumResultCols(stmt, &n)) || ODBC_ERROR(stmt));
-
-		return n;
-	}
+#endif // 0
 	inline SQLRETURN GetNum(ODBC::Stmt& stmt, SQLUSMALLINT n, xll::OPER& o)
 	{
 		o.xltype = xltypeNum;
 
 		return  SQLGetData(stmt, n + 1, SQL_C_DOUBLE, &o.val.num, sizeof(double), 0);
 	}
-	inline SQLRETURN GetStr(ODBC::Stmt& stmt, SQLUSMALLINT n, xll::OPER& o, SQLULEN len = 0)
+	inline SQLRETURN GetStr(ODBC::Stmt& stmt, SQLUSMALLINT n, xll::OPER& o, SQLLEN len = 0)
 	{
 		if (len != 0)
-			o = xll::OPER(L"", static_cast<wchar_t>(len));
+			o = xll::OPER("", static_cast<wchar_t>(len + 1));
 
-		return SQLGetData(stmt, n + 1, SQL_C_TCHAR, ODBC_BUF0(o));
+		return SQLGetData(stmt, n + 1, SQL_C_TCHAR, ODBC_STR(o), &len);
 	}
 	inline SQLRETURN GetDate(ODBC::Stmt& stmt, SQLUSMALLINT n, xll::OPER& o)
 	{
@@ -85,7 +74,7 @@ namespace ODBC {
 
 		return rc;
 	}
-
+#if 0
 	struct Bind : public xll::OPER {
 		xll::OPER header;
 		std::vector<SQLSMALLINT> type, nullable, digits;
@@ -97,7 +86,7 @@ namespace ODBC {
 				type(size()), nullable(size()), digits(size()), len(size())
 		{
 			for (WORD i = 0; i < size(); ++i) {
-				header[i] = xll::OPER(L"", 255);
+				header[i] = xll::OPER("", 255);
 
 				ensure (SQL_SUCCEEDED(SQLDescribeCol(stmt, i + 1, ODBC_BUFS(header[i]), &type[i], &len[i], &digits[i], &nullable[i]))
 					|| ODBC_ERROR(stmt));
@@ -105,7 +94,7 @@ namespace ODBC {
 				switch (type[i]) {
 				case SQL_CHAR: case SQL_VARCHAR: case SQL_WCHAR: case SQL_WVARCHAR: 
 					//!!! check for long strings!!!
-					operator[](i) = xll::OPER(L"", static_cast<wchar_t>(len[i]));
+					operator[](i) = xll::OPER("", static_cast<wchar_t>(len[i]));
 					GetData[i] = [this](SQLSMALLINT i) { return this->GetStr(i); };
 
 					break;
@@ -148,5 +137,5 @@ namespace ODBC {
 				ensure (SQL_SUCCEEDED(GetData[i](i)) || ODBC_ERROR(stmt_));
 		}
 	};
-
 }
+#endif // 0

@@ -65,15 +65,17 @@ Varchar
 A description of the table.
 */ 
 static AddIn xai_odbc_tables(
-	Function(XLL_LPOPER, L"?xll_odbc_tables", L"ODBC.TABLES")
-	.Arg(XLL_HANDLE, L"Dbc", L"is a handle to a database connection.")
-	.Arg(XLL_CSTRING, L"Catalog", L"is the optional catalog pattern. Default is \"%\"", L"%") 
-	.Arg(XLL_CSTRING, L"Schema", L"is the optional schema pattern. Default is \"%\"", L"%") 
-	.Arg(XLL_CSTRING, L"Table", L"is the optional table pattern. Default is \"%\"", L"%") 
-	.Arg(XLL_CSTRING, L"Type", L"is the optional type list. Default is \"%\"",  L"%")
-	.Category(L"ODBC")
-	.FunctionHelp(L"Return table information.")
-    .Documentation(LR"(
+	Function(XLL_LPOPER, "xll_odbc_tables", "ODBC.TABLES")
+	.Arguments({
+		Arg(XLL_HANDLE, "Dbc", "is a handle to a database connection."),
+		Arg(XLL_CSTRING, "Catalog", "is the optional catalog pattern. Default is \"%\"", "%"),
+		Arg(XLL_CSTRING, "Schema", "is the optional schema pattern. Default is \"%\"", "%"),
+		Arg(XLL_CSTRING, "Table", "is the optional table pattern. Default is \"%\"", "%"),
+		Arg(XLL_CSTRING, "Type", "is the optional type list. Default is \"%\"",  "%"),
+		})
+	.Category("ODBC")
+	.FunctionHelp("Return table information.")
+    .Documentation(R"(
 SQLTables returns the list of table, catalog, or schema names, 
 and table types, stored in a specific data source. 
 The driver returns the information as a result set.
@@ -96,8 +98,10 @@ LPOPER WINAPI xll_odbc_tables(HANDLEX h, SQLTCHAR* cat, SQLTCHAR* schem, SQLTCHA
 
 		OPER row(1, 5);
 		for (WORD i = 0; i < 5; ++i) {
-			row[i] = OPER(L"", 255);
-			ensure (SQL_SUCCEEDED(SQLBindCol(stmt, i + 1, SQL_C_CHAR, ODBC_BUFI(row[i]))) || ODBC_ERROR(stmt));
+			row[i] = OPER("", 255);
+			SQLLEN r0 = 254;
+			ensure (SQL_SUCCEEDED(SQLBindCol(stmt, i + 1, SQL_C_CHAR, ODBC_STR(row[i]), &r0)) || ODBC_ERROR(stmt));
+			row[i].val.str[0] = (SQLTCHAR)r0;
 		}
 
 		while (SQL_SUCCEEDED(SQLFetch(stmt)) || ODBC_ERROR(stmt)) {
@@ -107,11 +111,11 @@ LPOPER WINAPI xll_odbc_tables(HANDLEX h, SQLTCHAR* cat, SQLTCHAR* schem, SQLTCHA
 	catch (const std::exception& ex) {
 		XLL_ERROR(ex.what());
 
-		o = OPER(xlerr::NA);
+		o = OPER(ErrNA);
 	}
 
 	if (o == OPER())
-		o = OPER(xlerr::Null);
+		o = OPER(ErrNull);
 
 	return &o;
 }

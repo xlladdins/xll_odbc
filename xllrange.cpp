@@ -2,17 +2,19 @@
 #include "xllrange.h"
 
 #ifndef CATEGORY
-#define CATEGORY L"XLL"
+#define CATEGORY "XL"
 #endif
 
 using namespace xll;
 
 static AddIn xai_range_set(
-	Function(XLL_HANDLE, L"?xll_range_set", L"RANGE.SET")
-	.Arg(XLL_LPOPER, L"Range", L"is a range.")
+	Function(XLL_HANDLE, "?xll_range_set", "RANGE.SET")
+	.Arguments({
+		Arg(XLL_LPOPER, "Range", "is a range.")
+		})
 	.Uncalced()
 	.Category(CATEGORY)
-	.FunctionHelp(L"Return a handle to Range.")
+	.FunctionHelp("Return a handle to Range.")
 );
 HANDLEX WINAPI xll_range_set(LPOPER px)
 {
@@ -21,10 +23,12 @@ HANDLEX WINAPI xll_range_set(LPOPER px)
 }
 
 static AddIn xai_range_get(
-	Function(XLL_LPOPER, L"?xll_range_get", L"RANGE.GET")
-	.Arg(XLL_HANDLE, L"Handle", L"is a handle to a range.")
+	Function(XLL_LPOPER, "?xll_range_get", "RANGE.GET")
+	.Arguments({
+		Arg(XLL_HANDLE, "Handle", "is a handle to a range."),
+		})
 	.Category(CATEGORY)
-	.FunctionHelp(L"Return the range correponding to Handle.")
+	.FunctionHelp("Return the range correponding to Handle.")
 );
 LPOPER WINAPI xll_range_get(HANDLEX h)
 {
@@ -33,12 +37,14 @@ LPOPER WINAPI xll_range_get(HANDLEX h)
 }
 
 static AddIn xai_range_join(
-	Function(XLL_LPOPER, L"?xll_range_join", L"RANGE.JOIN")
-	.Arg(XLL_LPOPER, L"Range", L"is a range.")
-	.Arg(XLL_CSTRING, L"FS", L"is the field separator.")
-    .Arg(XLL_CSTRING, L"RS", L"is the record separator.")
+	Function(XLL_LPOPER, "?xll_range_join", "RANGE.JOIN")
+	.Arguments({
+		Arg(XLL_LPOPER, "Range", "is a range."),
+		Arg(XLL_CSTRING, "FS", "is the field separator."),
+		Arg(XLL_CSTRING, "RS", "is the record separator."),
+		})
 	.Category(CATEGORY)
-	.FunctionHelp(L"Join Range using field and record separators.")
+	.FunctionHelp("Join Range using field and record separators.")
 );
 LPOPER WINAPI xll_range_join(const LPOPER px, const wchar_t* fs, const wchar_t* rs)
 {
@@ -63,19 +69,21 @@ LPOPER WINAPI xll_range_join(const LPOPER px, const wchar_t* fs, const wchar_t* 
 	catch (const std::exception& ex) {
 		XLL_ERROR(ex.what());
 
-		r = OPER(xlerr::NA);
+		r = OPER(ErrNA);
 	}
 
 	return &r;
 }
 
 static AddIn xai_range_split(
-	Function(XLL_LPOPER, L"?xll_range_split", L"RANGE.SPLIT")
-	.Arg(XLL_PSTRING, L"String", L"is a string.")
-	.Arg(XLL_CSTRING, L"FS", L"is a string of field separators.")
-	.Arg(XLL_CSTRING, L"RS", L"is a string of record separators.")
+	Function(XLL_LPOPER, "?xll_range_split", "RANGE.SPLIT")
+	.Arguments({
+		Arg(XLL_PSTRING, "String", "is a string."),
+		Arg(XLL_CSTRING, "FS", "is a string of field separators."),
+		Arg(XLL_CSTRING, "RS", "is a string of record separators."),
+		})
 	.Category(CATEGORY)
-	.FunctionHelp(L"Split String using field and record separators.")
+	.FunctionHelp("Split String using field and record separators.")
 );
 LPOPER WINAPI xll_range_split(const wchar_t* str, const wchar_t* fs, const wchar_t* rs)
 {
@@ -98,7 +106,7 @@ LPOPER WINAPI xll_range_split(const wchar_t* str, const wchar_t* fs, const wchar
 	catch (const std::exception& ex) {
 		XLL_ERROR(ex.what());
 
-		o = OPER(xlerr::NA);
+		o = OPER(ErrNA);
 	}
 
 	return &o;

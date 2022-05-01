@@ -5,14 +5,16 @@
 using namespace xll;
 
 static AddIn xai_odbc_connect(
-	Function(XLL_HANDLE, L"?xll_odbc_connect", L"ODBC.CONNECT")
-	.Arg(XLL_CSTRING, L"DSN", L"is the data source name.")
-	.Arg(XLL_CSTRING, L"?User", L"is the optional user name.")
-	.Arg(XLL_CSTRING, L"?Pass", L"is the optional password.")
+	Function(XLL_HANDLE, "xll_odbc_connect", "ODBC.CONNECT")
+	.Arguments({
+		Arg(XLL_CSTRING, "DSN", "is the data source name."),
+		Arg(XLL_CSTRING, "?User", "is the optional user name."),
+		Arg(XLL_CSTRING, "?Pass", "is the optional password."),
+		})
 	.Uncalced()
-	.Category(L"ODBC")
-	.FunctionHelp(L"Return a handle to an ODBC connection.")
-    .Documentation(LR"(
+	.Category("ODBC")
+	.FunctionHelp("Return a handle to an ODBC connection.")
+    .Documentation(R"(
 SQLConnect establishes connections to a driver and a data source. 
 The connection handle references storage of all information about the connection to the data source, 
 including status, transaction state, and error information.
@@ -21,7 +23,7 @@ including status, transaction state, and error information.
 HANDLEX WINAPI xll_odbc_connect(SQLTCHAR* dsn, SQLTCHAR* user, SQLTCHAR* pass)
 {
 #pragma XLLEXPORT
-	handlex h;
+	HANDLEX h = INVALID_HANDLEX;
 
 	try {
 		handle<ODBC::Dbc> hdbc(new ODBC::Dbc());
@@ -38,16 +40,18 @@ HANDLEX WINAPI xll_odbc_connect(SQLTCHAR* dsn, SQLTCHAR* user, SQLTCHAR* pass)
 }
 
 static AddIn xai_odbc_browse_connect(
-	Function(XLL_HANDLE, L"?xll_odbc_browse_connect", L"ODBC.CONNECT.BROWSE")
-	.Arg(XLL_CSTRING, L"\"DRIVER={Microsoft Excel Driver (*.xls)}\"", L"is an odbc data source name.")
+	Function(XLL_HANDLE, "?xll_odbc_browse_connect", "ODBC.CONNECT.BROWSE")
+	.Arguments({
+		Arg(XLL_CSTRING, "\"DRIVER={Microsoft Excel Driver (*.xls)}\"", "is an odbc data source name."),
+		})
 	.Uncalced()
-	.Category(L"ODBC")
-	.FunctionHelp(L"Display a list of available drivers and return a handle to an ODBC connection.")
+	.Category("ODBC")
+	.FunctionHelp("Display a list of available drivers and return a handle to an ODBC connection.")
 );
 HANDLEX WINAPI xll_odbc_browse_connect(const wchar_t* conn)
 {
 #pragma XLLEXPORT
-	handlex h;
+	HANDLEX h = INVALID_HANDLEX;
 
 	try {
 		handle<ODBC::Dbc> ph(new ODBC::Dbc());
@@ -69,43 +73,45 @@ HANDLEX WINAPI xll_odbc_browse_connect(const wchar_t* conn)
 	return h;
 }
 
-static AddInX xai_odbc_driver_connect(
-	FunctionX(XLL_HANDLE, L"?xll_odbc_driver_connect", L"ODBC.CONNECT.DRIVER")
-	.Arg(XLL_LPOPER, L"driver", L"is an odbc connection string.", L"{DRIVER=\"{SQL Server}\"}")
+static AddIn xai_odbc_driver_connect(
+	Function(XLL_HANDLE, "xll_odbc_driver_connect", "ODBC.CONNECT.DRIVER")
+	.Arguments({
+		Arg(XLL_LPOPER, "driver", "is an odbc connection string.", "{DRIVER=\"{SQL Server}\"}"),
+		})
 	.Uncalced()
-	.Category(L"ODBC")
-	.FunctionHelp(L"Display a list of available drivers and return a handle to an ODBC connection.")
-    .Documentation(LR"(
+	.Category("ODBC")
+	.FunctionHelp("Display a list of available drivers and return a handle to an ODBC connection.")
+    .Documentation(R"(
 SQLDriverConnect is an alternative to SQLConnect. 
 It supports data sources that require more connection information than the three arguments in SQLConnect, 
 dialog boxes to prompt the user for all connection information, 
 and data sources that are not defined in the system information.
-</para><para>
+</p><p>
 SQLDriverConnect provides the following connection attributes:
-</para>
-<list class="bullet">
-<listItem>
-<para>
+</p>
+<ul>
+<li>
+<p>
     Establish a connection using a connection string that contains the data source name, one or more user IDs, one or more passwords, and other information required by the data source.
-</para>
-</listItem>
-<listItem>
-<para>
+</p>
+</li>
+<li>
+<p>
     Establish a connection using a partial connection string or no additional information; in this case, the Driver Manager and the driver can each prompt the user for connection information.
-</para>
-</listItem>
-<listItem>
-<para>
+</p>
+</li>
+<li>
+<p>
     Establish a connection to a data source that is not defined in the system information. If the application supplies a partial connection string, the driver can prompt the user for connection information.
-</para>
-</listItem>
-<listItem>
-<para>
+</p>
+</li>
+<li>
+<p>
     Establish a connection to a data source using a connection string constructed from the information in a .dsn file.
-</para>
-</listItem>
+</p>
+</li>
 </list>
-<para>
+<p>
 After a connection is established, SQLDriverConnect returns the completed connection string. 
 The application can use this string for subsequent connection requests. 
 For more information, see Connecting with SQLDriverConnect.
@@ -115,7 +121,7 @@ For more information, see Connecting with SQLDriverConnect.
 HANDLEX WINAPI xll_odbc_driver_connect(LPOPER pcs)
 {
 #pragma XLLEXPORT
-	handlex h;
+	HANDLEX h = INVALID_HANDLEX;
 
 	try {
 		handle<ODBC::Dbc> hdbc(new ODBC::Dbc());
@@ -145,12 +151,14 @@ HANDLEX WINAPI xll_odbc_driver_connect(LPOPER pcs)
 	return h;
 }
 
-static AddInX xai_odbc_connection_string(
-	FunctionX(XLL_CSTRING, L"?xll_odbc_connection_string", L"ODBC.CONNECTION.STRING")
-	.Arg(XLL_HANDLE, L"Dbc", L"is a handle returned by ODBC.CONNECT.*.")
-	.Category(L"ODBC")
-	.FunctionHelp(L"Returns the full connection string.")
-    .Documentation(LR"(
+static AddIn xai_odbc_connection_string(
+	Function(XLL_CSTRING, "?xll_odbc_connection_string", "ODBC.CONNECTION.STRING")
+	.Arguments({
+		Arg(XLL_HANDLE, "Dbc", "is a handle returned by ODBC.CONNECT.*."),
+		})
+	.Category("ODBC")
+	.FunctionHelp("Returns the full connection string.")
+    .Documentation(R"(
 Return the full connection string after a successful connection to and ODBC data source.
 )")
 );

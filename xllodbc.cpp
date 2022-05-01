@@ -2,22 +2,23 @@
 #include "xllodbc.h"
 
 using namespace xll;
-
+/*
 static AddIn xai_odbc_documentation(
-    Documentation(LR"(
+    Documentation(R"(
 This add-in provides an ODBC interface for Excel.
 )"));
+*/
 
 static AddIn xai_odbc_get_info(
-	Function(XLL_LPOPER, L"?xll_odbc_get_info", L"ODBC.GET.INFO")
-	.Arg(XLL_HANDLE, L"Dbc", L"is a handle to a database connection.")
-	.Arg(XLL_USHORT, L"Type", L"is a type from the ODBC_INFO_TYPE_* enumeration.")
-	.Category(L"ODBC")
-	.FunctionHelp(L"Returns general information about the driver and data source associated with a connection.")
-    .Documentation(LR"(
+	Function(XLL_LPOPER, "xll_odbc_get_info", "ODBC.GET.INFO")
+	.Arguments({
+		Arg(XLL_HANDLE, "Dbc", "is a handle to a database connection."),
+		Arg(XLL_USHORT, "Type", "is a type from the ODBC_INFO_TYPE_* enumeration."),
+		})
+	.Category("ODBC")
+	.FunctionHelp("Returns general information about the driver and data source associated with a connection.")
+    .Documentation(R"(
 SQLGetInfo returns general information about the driver and data source associated with a connection.
-</para><para>
-
 )")
 );
 LPOPER WINAPI xll_odbc_get_info(HANDLEX dbc, USHORT type)
@@ -28,24 +29,29 @@ LPOPER WINAPI xll_odbc_get_info(HANDLEX dbc, USHORT type)
 	try {
 		handle<ODBC::Dbc> hdbc(dbc);
 
-	    ensure (SQL_SUCCESS == SQLGetInfo(*hdbc, type, ODBC_BUFS(o)));
+		o = OPER("", 255);
+		SQLSMALLINT o0;
+	    ensure (SQL_SUCCESS == SQLGetInfo(*hdbc, type, ODBC_STR(o), &o0));
+		o.val.str[0] = o0;
 	}
 	catch (const std::exception& ex) {
 		XLL_ERROR(ex.what());
 
-		o = OPER(xlerr::NA);
+		o = OPER(ErrNA);
 	}
 
 	return &o;
 }
-
+#if 0
 static AddIn xai_odbc_execute(
-	Function(XLL_LPOPER, L"?xll_odbc_execute", L"ODBC.EXECUTE")
-	.Arg(XLL_HANDLE, L"Dbc", L"is a handle to a database connection.")
-	.Arg(XLL_LPOPER, L"Query", L"is a SQL query.")
-	.Category(L"ODBC")
-	.FunctionHelp(L"Return a handle to the result of a query.")
-    .Documentation(LR"(
+	Function(XLL_LPOPER, "xll_odbc_execute", "ODBC.EXECUTE")
+	.Arguments({
+		Arg(XLL_HANDLE, "Dbc", "is a handle to a database connection."),
+		Arg(XLL_LPOPER, "Query", "is a SQL query."),
+		})
+	.Category("ODBC")
+	.FunctionHelp("Return a handle to the result of a query.")
+    .Documentation(R"(
 Prepare, execute, and fetch the results of Query.
 )")
 );
@@ -78,7 +84,7 @@ LPOPER WINAPI xll_odbc_execute(HANDLEX dbc, LPOPER pq)
 	catch (const std::exception& ex) {
 		XLL_ERROR(ex.what());
 		
-		o = OPER(xlerr::NA);
+		o = OPER(ErrNA);
 	}
 
 	return &o;
@@ -89,7 +95,7 @@ LPOPER WINAPI xll_odbc_execute(HANDLEX dbc, LPOPER pq)
 void xll_test_connect(void)
 {
 	ODBC::Dbc dbc;
-	dbc.BrowseConnect((const SQLTCHAR*)L"DSN=foo");
+	dbc.BrowseConnect((const SQLTCHAR*)"DSN=foo");
 	
 }
 
@@ -109,3 +115,4 @@ int xll_test_odbc()
 static Auto<OpenAfter> xao_test_odbc(xll_test_odbc);
 
 #endif
+#endif // 0
