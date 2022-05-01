@@ -23,10 +23,7 @@ LPOPER WINAPI xll_odbc_data_sources(void)
 		r[0] = OPER("", 255);
 		r[1] = OPER("", 255);
 
-		SQLSMALLINT r0, r1;
-		while (SQL_NO_DATA != SQLDataSources(ODBC::Env(), SQL_FETCH_NEXT, ODBC_STR(r[0]), &r0, ODBC_STR(r[1]), &r1)) {
-			r[0].val.str[0] = r0;
-			r[1].val.str[0] = r1;
+		while (SQL_NO_DATA != SQLDataSources(ODBC::Env(), SQL_FETCH_NEXT, ODBC_BUF(r[0]), ODBC_BUF(r[1]))) {
 			o.push_back(r);
 			r[0].val.str[0] = 255;
 			r[1].val.str[0] = 255;

@@ -3,7 +3,9 @@
 #include "xll/xll/xll.h"
 #include "odbc.h"
 
-#define ODBC_STR(o) reinterpret_cast<SQLTCHAR*>(o.val.str + 1), o.val.str[0]
+#define ODBC_STR(o) o.val.str + 1, o.val.str[0]
+#define ODBC_BUF(o) ODBC_STR(o), ODBC::lenptr_<SQLSMALLINT>(o)
+#define ODBC_BUF_(T, o) ODBC_STR(o), ODBC::lenptr_<T>(o)
 
 template<enum ODBC::SQL_HANDLE T>
 inline bool ODBC_ERROR(ODBC::Handle<T>& h)
@@ -11,44 +13,46 @@ inline bool ODBC_ERROR(ODBC::Handle<T>& h)
 	ODBC::DiagRec dr;
 	std::basic_string<SQLTCHAR> rec;
 
-	for (SQLSMALLINT i = 1; h.Get(i, dr) != SQL_NO_DATA; ++i) {
-		rec.append(dr.state);
-		rec.append({ ':', ' ' });
-		rec.append(dr.message);
-		//rec.append('\n');
+	for (SQLSMALLINT i = 1; h.GetDiagRec(i, dr) != SQL_NO_DATA; ++i) {
+		rec.append(dr.to_string());
+		rec.append({ '\n' });
 	}
 
-	if (rec.size())
-		XLL_ERROR((char*)rec.c_str());
+	if (rec.size()) {
+		xll::OPER4 orec(rec.c_str());
+		XLL_ERROR(orec.as_str() + 1);
+	}
 
 	return false;
 }
-#if 0
+
 namespace ODBC {
 
-	template<class T>
+	template<class T, class X>
 	class lenptr {
-		xll::OPER& o_;
+		xll::XOPER<X>& o_;
 		T len;
 	public:
-		lenptr(xll::OPER& o)
+		lenptr(xll::XOPER<X>& o)
 			: o_(o), len(0)
 		{ }
 		~lenptr()
 		{
-			if (len)
-				o_.val.str[0] = static_cast<wchar_t>(len);
+			o_.val.str[0] = static_cast<xll::traits<X>::xchar>(len);
 		}
 		operator T*()
 		{
 			return &len;
 		}
 	};
-#endif // 0
+	template<class T, class X>
+	inline lenptr<T, X> lenptr_(xll::XOPER<X>& o)
+	{
+		return lenptr<T, X>(o);
+	}
+
 	inline SQLRETURN GetNum(ODBC::Stmt& stmt, SQLUSMALLINT n, xll::OPER& o)
 	{
-		o.xltype = xltypeNum;
-
 		return  SQLGetData(stmt, n + 1, SQL_C_DOUBLE, &o.val.num, sizeof(double), 0);
 	}
 	inline SQLRETURN GetStr(ODBC::Stmt& stmt, SQLUSMALLINT n, xll::OPER& o, SQLLEN len = 0)
@@ -137,5 +141,6 @@ namespace ODBC {
 				ensure (SQL_SUCCEEDED(GetData[i](i)) || ODBC_ERROR(stmt_));
 		}
 	};
-}
 #endif // 0
+}
+

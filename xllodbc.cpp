@@ -30,9 +30,7 @@ LPOPER WINAPI xll_odbc_get_info(HANDLEX dbc, USHORT type)
 		handle<ODBC::Dbc> hdbc(dbc);
 
 		o = OPER("", 255);
-		SQLSMALLINT o0;
-	    ensure (SQL_SUCCESS == SQLGetInfo(*hdbc, type, ODBC_STR(o), &o0));
-		o.val.str[0] = o0;
+	    ensure (SQL_SUCCESS == SQLGetInfo(*hdbc, type, ODBC_BUF(o)));
 	}
 	catch (const std::exception& ex) {
 		XLL_ERROR(ex.what());
@@ -42,7 +40,7 @@ LPOPER WINAPI xll_odbc_get_info(HANDLEX dbc, USHORT type)
 
 	return &o;
 }
-#if 0
+
 static AddIn xai_odbc_execute(
 	Function(XLL_LPOPER, "xll_odbc_execute", "ODBC.EXECUTE")
 	.Arguments({
@@ -69,15 +67,26 @@ LPOPER WINAPI xll_odbc_execute(HANDLEX dbc, LPOPER pq)
 			ensure (SQL_SUCCEEDED(SQLPrepare(stmt, ODBC_STR(q[i]))) || ODBC_ERROR(stmt));
 		}
 
-//		ensure (SQL_SUCCEEDED(SQLExecute(stmt)));
 		ensure (SQL_SUCCEEDED(SQLExecute(stmt)) || ODBC_ERROR(stmt));
+		
+		SQLSMALLINT c;
+		ensure(SQL_SUCCEEDED(stmt.NumResultsCols(c)) || ODBC_ERROR(stmt));
+		std::vector<SQLSMALLINT> type(c);
+		std::vector<SQLULEN> size(c);
+		
+		ODBC::Stmt::Col col;
+		for (SQLSMALLINT j = 0; j < c; ++j) {
+			stmt.DescribeCol(j + 1, col);
+			type[j] = col.DataType;
+			size[j] = col.ColumnSize;
+		}
 
 		o.resize(0,0);
-		ODBC::Bind row(stmt);
-//		double x;
-//		SQLBindCol(stmt, 2, SQL_C_DOUBLE, &x, sizeof(double), 0);
+		OPER row(1, c);
 		while (SQL_SUCCEEDED(SQLFetch(stmt)) || ODBC_ERROR(stmt)) {
-			row.getData();
+			for (SQLSMALLINT j = 0; j < c; ++j) {
+				stmt.GetData(j + 1, type[j], row[j], size[j]);
+			}
 			o.push_back(row);
 		}
 	}
@@ -89,7 +98,7 @@ LPOPER WINAPI xll_odbc_execute(HANDLEX dbc, LPOPER pq)
 
 	return &o;
 }
-
+#if 0
 #ifdef _DEBUG
 
 void xll_test_connect(void)

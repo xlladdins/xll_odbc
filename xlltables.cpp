@@ -90,18 +90,21 @@ LPOPER WINAPI xll_odbc_tables(HANDLEX h, SQLTCHAR* cat, SQLTCHAR* schem, SQLTCHA
 		o.resize(0,0);
 		handle<ODBC::Dbc> dbc(h);
 		ODBC::Stmt stmt(*dbc);
+		SQLTCHAR* pct = (SQLTCHAR*)_T("%");
 
-//		if (!(*cat||*schem||*name||*type))
-//			cat = _T("%");
+		if (!*cat) cat = pct;
+		if (!*schem) schem = pct;
+		if (!*name) name = pct;
+		if (!*type) cat = type;
 
 		ensure (SQL_SUCCEEDED(SQLTables(stmt, cat, SQL_NTS, schem, SQL_NTS, name, SQL_NTS, type, SQL_NTS)) || ODBC_ERROR(stmt));
 
 		OPER row(1, 5);
 		for (WORD i = 0; i < 5; ++i) {
 			row[i] = OPER("", 255);
-			SQLLEN r0 = 254;
-			ensure (SQL_SUCCEEDED(SQLBindCol(stmt, i + 1, SQL_C_CHAR, ODBC_STR(row[i]), &r0)) || ODBC_ERROR(stmt));
-			row[i].val.str[0] = (SQLTCHAR)r0;
+			//SQLLEN r0 = 254;
+			ensure (SQL_SUCCEEDED(SQLBindCol(stmt, i + 1, SQL_C_CHAR, ODBC_BUF_(SQLLEN, row[i]))) || ODBC_ERROR(stmt));
+			//row[i].val.str[0] = (SQLTCHAR)r0;
 		}
 
 		while (SQL_SUCCEEDED(SQLFetch(stmt)) || ODBC_ERROR(stmt)) {
@@ -113,9 +116,6 @@ LPOPER WINAPI xll_odbc_tables(HANDLEX h, SQLTCHAR* cat, SQLTCHAR* schem, SQLTCHA
 
 		o = OPER(ErrNA);
 	}
-
-	if (o == OPER())
-		o = OPER(ErrNull);
 
 	return &o;
 }
