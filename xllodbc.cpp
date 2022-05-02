@@ -85,7 +85,7 @@ LPOPER WINAPI xll_odbc_execute(HANDLEX dbc, LPOPER pq)
 		OPER row(1, c);
 		while (SQL_SUCCEEDED(SQLFetch(stmt)) || ODBC_ERROR(stmt)) {
 			for (SQLSMALLINT j = 0; j < c; ++j) {
-				stmt.GetData(j + 1, type[j], row[j], size[j]);
+				//stmt.GetData(j + 1, type[j], row[j], size[j]);
 			}
 			o.push_back(row);
 		}

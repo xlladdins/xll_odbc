@@ -31,7 +31,6 @@ X(TYPE_TIMESTAMP, SQL_TIMESTAMP_STRUCT, TIMESTAMP_STRUCT) \
 
 // SQL_C_NUMERIC, SQL_C_GUID, 
 
-
 namespace ODBC {
 
 	// SQL_C_TYPE::CHAR = SQL_C_TYPE_CHAR, ...
@@ -42,10 +41,65 @@ namespace ODBC {
 #undef X_
 	};
 
-	template<class T> struct traits{};
+	template<class T>
+	inline T* Ptr(T& t)
+	{
+		return &t;
+	}
+	template<class T>
+	inline SQLLEN Len(T& t)
+	{
+		return sizeof(t);
+	}
+	// counted string
+	template<class SQLTCHAR>
+	inline SQLTCHAR* Ptr(SQLTCHAR* str)
+	{
+		return str + 1;
+	}
+	template<class SQLTCHAR>
+	inline SQLLEN Len(SQLTCHAR* str)
+	{
+		return str[0];
+	}
+
+	template<class T> struct traits {};
 #define X_(a,b,c) template<> struct traits<a> { using a = b; static const SQLSMALLINT type = SQL_C_##a; };
 	ODBC_C_DATA_TYPES(X_)
 #undef X_
+
+	// pointer to U sets t in destructor
+	template<class U>
+	class LenTPtr {
+		SQLTCHAR& t;
+		U len;
+	public:
+		LenTPtr(SQLTCHAR& t)
+			: t(t)
+		{ }
+		~LenTPtr()
+		{
+			if (len > std::numeric_limits<SQLTCHAR>::max()) {
+				throw std::runtime_error(__FUNCTION__ ": length too long");
+			}
+
+			t[0] = static_cast<SQLTCHAR>(len);
+		}
+		operator U* ()
+		{
+			return &len;
+		}
+	};
+	template<class U, class T>
+	inline auto LenPtr(T& t)
+	{
+		return nullptr;
+	}
+	template<class U>
+	inline auto LenPtr(SQLTCHAR& t)
+	{
+		return LenTPtr<U>(t);
+	}
 
 	struct DiagRec {
 		SQLTCHAR state[6] = { 0 };
@@ -201,19 +255,37 @@ namespace ODBC {
 
 		struct Col {
 			SQLUSMALLINT ColumnNumber;
-			std::basic_string<SQLTCHAR> ColumnName;
-			SQLSMALLINT DataType;
-			SQLULEN ColumnSize;
-			SQLSMALLINT DecimalDigits;
-			SQLSMALLINT Nullable;
+			SQLTCHAR     ColumnName[255];
+			SQLSMALLINT  DataType;
+			SQLULEN      ColumnSize;
+			SQLSMALLINT  DecimalDigits;
+			SQLSMALLINT  Nullable;
+			// counted string
+			const SQLTCHAR* Name() const
+			{
+				return ColumnName;
+			}
+			SQLSMALLINT Type() const
+			{
+				return DataType;
+			}
+			SQLULEN Size() const
+			{
+				return ColumnSize;
+			}
+			//SQLSMALLINT DecimalDigits;
+			bool IsNullable() const
+			{
+				return SQL_NULLABLE == Nullable;
+			}
 		};
 		SQLRETURN DescribeCol(
 			SQLUSMALLINT ColumnNumber,
-			SQLTCHAR* ColumnName,
+			SQLTCHAR*    ColumnName,
 			SQLSMALLINT  BufferLength,
 			SQLSMALLINT* NameLengthPtr,
 			SQLSMALLINT* DataTypePtr,
-			SQLULEN* ColumnSizePtr,
+			SQLULEN*     ColumnSizePtr,
 			SQLSMALLINT* DecimalDigitsPtr,
 			SQLSMALLINT* NullablePtr) const
 		{
@@ -222,46 +294,27 @@ namespace ODBC {
 		}
 		SQLRETURN DescribeCol(SQLUSMALLINT n, Col& col)
 		{
-			SQLSMALLINT len;
-			SQLRETURN ret = DescribeCol(n, nullptr, 0, &len, nullptr, nullptr, nullptr, nullptr);
-			col.ColumnName.reserve(len + 1);
-			ret = DescribeCol(n, col.ColumnName.data(), len, &len, 
+			SQLSMALLINT len = 254;
+			
+			SQLRETURN ret = DescribeCol(n, col.ColumnName + 1, len, &len, 
 				&col.DataType, &col.ColumnSize, &col.DecimalDigits, &col.Nullable);
-		}
-		SQLRETURN ColName(SQLUSMALLINT n, SQLTCHAR* name) const
-		{
-			SQLSMALLINT len = name[0];
-			SQLRETURN ret = DescribeCol(n, name + 1, name[0], &len, nullptr, nullptr, nullptr, nullptr);
-			name[0] = static_cast<SQLTCHAR>(len);
+			col.ColumnName[0] = len;
 
 			return ret;
-		}
-		SQLSMALLINT ColDataType(SQLUSMALLINT n) const
-		{
-			SQLSMALLINT t;
-			DescribeCol(n, nullptr, 0, nullptr, &t, nullptr, nullptr, nullptr);
-			return t;
-		}
-		SQLULEN ColSize(SQLUSMALLINT n) const
-		{
-			SQLULEN len;
-			DescribeCol(n, nullptr, 0, nullptr, nullptr, &len, nullptr, nullptr);
-			return len;
-		}
-		bool ColNullable(SQLUSMALLINT n) const
-		{
-			SQLSMALLINT b;
-			DescribeCol(n, nullptr, 0, nullptr, nullptr, nullptr, nullptr, &b);
-			return b == SQL_NULLABLE;
 		}
 
 		// https://docs.microsoft.com/en-us/sql/odbc/reference/syntax/sqlsetstmtattr-function
 		SQLRETURN SetAttr(
-			SQLINTEGER    Attribute,
-			SQLPOINTER    ValuePtr,
-			SQLINTEGER    StringLength)
+			SQLINTEGER Attribute,
+			SQLPOINTER ValuePtr,
+			SQLINTEGER StringLength) const
 		{
 			return SQLSetStmtAttr(*this, Attribute, ValuePtr, StringLength);
+		}
+		template<class T>
+		SQLRETURN SetAttr(SQLINTEGER Attribute, const T& t) const
+		{
+			return SQLSetStmtAttr(*this, Attribute, Ptr(t), Len(t));
 		}
 
 		// https://docs.microsoft.com/en-us/sql/odbc/reference/syntax/sqlbindparameter-function
@@ -289,6 +342,11 @@ namespace ODBC {
 			SQLLEN*        StrLen_or_IndPtr)
 		{
 			return SQLGetData(*this, Col_or_Param_Num, TargetType, TargetValuePtr, BufferLength, StrLen_or_IndPtr);
+		}
+		template<class T>
+		SQLRETURN GetData(SQLUSMALLINT n, T& t)
+		{
+			return GetData(n, traits<T>::type, Ptr(t), Len(t), LenPtr<SQLLEN>(t));
 		}
 	};
 

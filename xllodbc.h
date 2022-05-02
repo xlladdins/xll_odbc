@@ -4,8 +4,8 @@
 #include "odbc.h"
 
 #define ODBC_STR(o) o.val.str + 1, o.val.str[0]
-#define ODBC_BUF(o) ODBC_STR(o), ODBC::lenptr_<SQLSMALLINT>(o)
-#define ODBC_BUF_(T, o) ODBC_STR(o), ODBC::lenptr_<T>(o)
+#define ODBC_BUF(o) ODBC_STR(o), xll::lenptr_<SQLSMALLINT>(o)
+#define ODBC_BUF_(T, o) ODBC_STR(o), xll::lenptr_<T>(o)
 
 template<enum ODBC::SQL_HANDLE T>
 inline bool ODBC_ERROR(ODBC::Handle<T>& h)
@@ -26,8 +26,9 @@ inline bool ODBC_ERROR(ODBC::Handle<T>& h)
 	return false;
 }
 
-namespace ODBC {
+namespace xll {
 
+	// set string length of type T in destructor
 	template<class T, class X>
 	class lenptr {
 		xll::XOPER<X>& o_;
@@ -35,7 +36,9 @@ namespace ODBC {
 	public:
 		lenptr(xll::XOPER<X>& o)
 			: o_(o), len(0)
-		{ }
+		{
+			ensure(o.is_str());
+		}
 		~lenptr()
 		{
 			o_.val.str[0] = static_cast<xll::traits<X>::xchar>(len);
@@ -46,6 +49,7 @@ namespace ODBC {
 		}
 	};
 	template<class T, class X>
+		requires (std::is_same_v<XLOPER, X> || std::is_same_v<XLOPER12, X>)
 	inline lenptr<T, X> lenptr_(xll::XOPER<X>& o)
 	{
 		return lenptr<T, X>(o);
@@ -65,15 +69,16 @@ namespace ODBC {
 	inline SQLRETURN GetDate(ODBC::Stmt& stmt, SQLUSMALLINT n, xll::OPER& o)
 	{
 		SQLRETURN rc(SQL_ERROR);
-		SQL_TIMESTAMP_STRUCT ts;
+		TIMESTAMP_STRUCT ts;
 
 		rc = SQLGetData(stmt, n + 1, SQL_C_TYPE_TIMESTAMP, &ts, sizeof(ts), 0);
 		if (SQL_SUCCEEDED(rc)) {
-			o = 0;
+			double d = 0;
 			if (ts.year)
-				o &= xll::Excel(xlfDate, xll::OPER(ts.year), xll::OPER(ts.month), xll::OPER(ts.day));
+				d += xll::Excel(xlfDate, xll::OPER(ts.year), xll::OPER(ts.month), xll::OPER(ts.day)).as_num();
 			if (ts.hour || ts.minute || ts.second)
-				o &= xll::Excel(xlfTime, xll::OPER(ts.hour), xll::OPER(ts.minute), xll::OPER(ts.second));
+				d += xll::Excel(xlfTime, xll::OPER(ts.hour), xll::OPER(ts.minute), xll::OPER(ts.second)).as_num();
+			o = d;
 		}
 
 		return rc;
