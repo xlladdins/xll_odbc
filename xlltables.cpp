@@ -95,7 +95,7 @@ LPOPER WINAPI xll_odbc_tables(HANDLEX h, SQLTCHAR* cat, SQLTCHAR* schem, SQLTCHA
 		if (!*cat) cat = pct;
 		if (!*schem) schem = pct;
 		if (!*name) name = pct;
-		if (!*type) cat = type;
+		if (!*type) cat = pct;
 
 		ensure (SQL_SUCCEEDED(SQLTables(stmt, cat, SQL_NTS, schem, SQL_NTS, name, SQL_NTS, type, SQL_NTS)) || ODBC_ERROR(stmt));
 

@@ -5,7 +5,7 @@
 using namespace xll;
 
 static AddIn xai_odbc_connect(
-	Function(XLL_HANDLE, "xll_odbc_connect", "ODBC.CONNECT")
+	Function(XLL_HANDLE, "xll_odbc_connect", "\\ODBC.CONNECT")
 	.Arguments({
 		Arg(XLL_CSTRING, "DSN", "is the data source name."),
 		Arg(XLL_CSTRING, "?User", "is the optional user name."),
@@ -40,7 +40,7 @@ HANDLEX WINAPI xll_odbc_connect(SQLTCHAR* dsn, SQLTCHAR* user, SQLTCHAR* pass)
 }
 
 static AddIn xai_odbc_browse_connect(
-	Function(XLL_HANDLE, "?xll_odbc_browse_connect", "ODBC.CONNECT.BROWSE")
+	Function(XLL_HANDLE, "?xll_odbc_browse_connect", "\\ODBC.BROWSE_CONNECT")
 	.Arguments({
 		Arg(XLL_CSTRING, "\"DRIVER={Microsoft Excel Driver (*.xls)}\"", "is an odbc data source name."),
 		})
@@ -74,7 +74,7 @@ HANDLEX WINAPI xll_odbc_browse_connect(const wchar_t* conn)
 }
 
 static AddIn xai_odbc_driver_connect(
-	Function(XLL_HANDLE, "xll_odbc_driver_connect", "ODBC.CONNECT.DRIVER")
+	Function(XLL_HANDLE, "xll_odbc_driver_connect", "\\ODBC.DRIVER_CONNECT")
 	.Arguments({
 		Arg(XLL_LPOPER, "driver", "is an odbc connection string.", "{DRIVER=\"{SQL Server}\"}"),
 		})

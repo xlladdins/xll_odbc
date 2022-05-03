@@ -3,6 +3,13 @@
 #include <Windows.h>
 #include <sqlext.h>
 
+typedef bool BIT;
+typedef signed char STINYINT;
+typedef unsigned char UTINYINT;
+typedef __int64 SBIGINT; 
+typedef unsigned __int64 UBIGINT;
+typedef unsigned char* BINARY;
+
 // https://docs.microsoft.com/en-us/sql/odbc/reference/appendixes/c-data-types
 // C type identifier, ODBC C typedef, C type
 #define ODBC_C_DATA_TYPES(X) \
@@ -14,12 +21,12 @@ X(SLONG, SQLINTEGER, long int) \
 X(ULONG, SQLUINTEGER, unsigned long int) \
 X(FLOAT, SQLREAL, float) \
 X(DOUBLE, SQLDOUBLE, double) \
-//X(BIT, SQLCHAR, unsigned char) \
-//X(STINYINT, SQLSCHAR, signed char) \
-//X(UTINYINT, SQLCHAR, unsigned char) \
-//X(SBIGINT, SQLBIGINT, __int64) \
-//X(UBIGINT, SQLUBIGINT, unsigned __int64) \
-//X(BINARY, SQLCHAR*, unsigned char*) \
+X(BIT, SQLCHAR, unsigned char) \
+X(STINYINT, SQLSCHAR, signed char) \
+X(UTINYINT, SQLCHAR, unsigned char) \
+X(SBIGINT, SQLBIGINT, __int64) \
+X(UBIGINT, SQLUBIGINT, unsigned __int64) \
+X(BINARY, SQLCHAR*, unsigned char*) \
 //X(BOOKMARK, BOOKMARK, unsigned long int) \
 //X(VARBOOKMARK, SQLCHAR*, unsigned char*) \
 //X(All C interval data types, SQL_INTERVAL_STRUCT, See the C Interval Structure section, later in this appendix.) \
@@ -71,17 +78,17 @@ namespace ODBC {
 	// pointer to U sets t in destructor
 	template<class U>
 	class LenTPtr {
-		SQLTCHAR& t;
+		SQLTCHAR* t;
 		U len;
 	public:
-		LenTPtr(SQLTCHAR& t)
-			: t(t)
+		LenTPtr(SQLTCHAR* t)
+			: t(t), len(0)
 		{ }
 		~LenTPtr()
 		{
-			if (len > std::numeric_limits<SQLTCHAR>::max()) {
-				throw std::runtime_error(__FUNCTION__ ": length too long");
-			}
+			//if (len > std::numeric_limits<SQLTCHAR>::max()) {
+			//	throw std::runtime_error(__FUNCTION__ ": length too long");
+			//}
 
 			t[0] = static_cast<SQLTCHAR>(len);
 		}
@@ -91,15 +98,19 @@ namespace ODBC {
 		}
 	};
 	template<class U, class T>
-	inline auto LenPtr(T& t)
+	inline auto LenPtr(T*)
 	{
 		return nullptr;
 	}
 	template<class U>
-	inline auto LenPtr(SQLTCHAR& t)
+	inline auto LenPtr(SQLTCHAR* t)
 	{
 		return LenTPtr<U>(t);
 	}
+
+#define ODBC_STR(o) o.val.str + 1, o.val.str[0]
+#define ODBC_BUF(o) ODBC_STR(o), ODBC::LenPtr<SQLSMALLINT>(o.val.str)
+#define ODBC_BUF_(T, o) ODBC_STR(o), ODBC::LenPtr<T>(o.val.str)
 
 	struct DiagRec {
 		SQLTCHAR state[6] = { 0 };
@@ -111,6 +122,21 @@ namespace ODBC {
 			std::basic_string<SQLTCHAR> s(state);
 			s.append({ ':', ' ' });
 			s.append(message, len);
+
+			return s;
+		}
+		SQLRETURN Get(SQLSMALLINT type, SQLHANDLE h, SQLSMALLINT n)
+		{
+			return SQLGetDiagRec(type, h, n, state, &error, message, SQL_MAX_MESSAGE_LENGTH, &len);
+		}
+		std::basic_string<SQLTCHAR> Get(SQLSMALLINT type, SQLHANDLE h)
+		{
+			std::basic_string<SQLTCHAR> s;
+
+			for (SQLSMALLINT i = 1; SQL_SUCCEEDED(Get(type, h, i)); ++i) {
+				s.append(to_string());
+				s.append({ '\n' });
+			}
 
 			return s;
 		}
@@ -153,9 +179,11 @@ namespace ODBC {
 		}
 
 		// https://docs.microsoft.com/en-us/sql/odbc/reference/syntax/sqlgetdiagrec-function
-		SQLRETURN GetDiagRec(SQLSMALLINT n, DiagRec& rec)
+		std::basic_string<SQLTCHAR> GetDiagRec()
 		{
-			return SQLGetDiagRec(type(), *this, n, rec.state, &rec.error, rec.message, SQL_MAX_MESSAGE_LENGTH, &rec.len);
+			DiagRec rec;
+
+			return rec.Get(type(), *this);
 		}
 		
 		// https://docs.microsoft.com/en-us/sql/odbc/reference/syntax/sqlgetdiagfield-function
@@ -169,16 +197,6 @@ namespace ODBC {
 			return SQLGetDiagField(type(), *this, RecNumber, DiagIdentifier, DiagInfoPtr, BufferLength, StringLengthPtr);
 		}
 	};
-
-	template<class R>
-	struct field_traits {
-		static const SQLSMALLINT len;
-	};
-#define ODBC_FIELD_TRAITS(t) template<> struct field_traits<SQL ## t > { static const SQL ## t len = static_cast<SQL ## t>(SQL_IS_ ## t) ; };
-	ODBC_FIELD_TRAITS(SMALLINT)
-	ODBC_FIELD_TRAITS(USMALLINT)
-	ODBC_FIELD_TRAITS(INTEGER)
-	ODBC_FIELD_TRAITS(UINTEGER)
 
 	// Environment singleton
 	class Env {
@@ -255,7 +273,7 @@ namespace ODBC {
 
 		struct Col {
 			SQLUSMALLINT ColumnNumber;
-			SQLTCHAR     ColumnName[255];
+			SQLTCHAR     ColumnName[255] = {254};
 			SQLSMALLINT  DataType;
 			SQLULEN      ColumnSize;
 			SQLSMALLINT  DecimalDigits;
@@ -296,7 +314,7 @@ namespace ODBC {
 		{
 			SQLSMALLINT len = 254;
 			
-			SQLRETURN ret = DescribeCol(n, col.ColumnName + 1, len, &len, 
+			SQLRETURN ret = DescribeCol(n, col.ColumnName + 1, len, &len,
 				&col.DataType, &col.ColumnSize, &col.DecimalDigits, &col.Nullable);
 			col.ColumnName[0] = len;
 
