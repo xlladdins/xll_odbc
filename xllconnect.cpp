@@ -5,15 +5,16 @@
 using namespace xll;
 
 static AddIn xai_odbc_connect(
-	Function(XLL_HANDLE, "xll_odbc_connect", "\\ODBC.CONNECT")
+	Function(XLL_HANDLE, "xll_odbc_connect", "\\" CATEGORY ".CONNECT")
 	.Arguments({
 		Arg(XLL_CSTRING, "DSN", "is the data source name."),
-		Arg(XLL_CSTRING, "?User", "is the optional user name."),
-		Arg(XLL_CSTRING, "?Pass", "is the optional password."),
+		Arg(XLL_CSTRING, "_User", "is the optional user name."),
+		Arg(XLL_CSTRING, "_Pass", "is the optional password."),
 		})
 	.Uncalced()
-	.Category("ODBC")
-	.FunctionHelp("Return a handle to an ODBC connection.")
+	.Category(CATEGORY)
+	.FunctionHelp("Return a handle to an ODBC connection using a data source name.")
+	.HelpTopic("https://docs.microsoft.com/en-us/sql/odbc/reference/syntax/sqlconnect-function")
     .Documentation(R"(
 SQLConnect establishes connections to a driver and a data source. 
 The connection handle references storage of all information about the connection to the data source, 
@@ -46,7 +47,7 @@ static AddIn xai_odbc_browse_connect(
 		})
 	.Uncalced()
 	.Category("ODBC")
-	.FunctionHelp("Display a list of available drivers and return a handle to an ODBC connection.")
+	.FunctionHelp("Display a dialog box of available drivers and return a handle to an ODBC connection.")
 );
 HANDLEX WINAPI xll_odbc_browse_connect(const wchar_t* conn)
 {
@@ -81,7 +82,8 @@ static AddIn xai_odbc_driver_connect(
 	.Uncalced()
 	.Category("ODBC")
 	.FunctionHelp("Display a list of available drivers and return a handle to an ODBC connection.")
-    .Documentation(R"(
+	.HelpTopic("https://docs.microsoft.com/en-us/sql/odbc/reference/syntax/sqldriverconnect-function")
+	.Documentation(R"(
 SQLDriverConnect is an alternative to SQLConnect. 
 It supports data sources that require more connection information than the three arguments in SQLConnect, 
 dialog boxes to prompt the user for all connection information, 

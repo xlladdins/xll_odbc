@@ -30,7 +30,7 @@ LPOPER WINAPI xll_odbc_get_info(HANDLEX dbc, USHORT type)
 		handle<ODBC::Dbc> hdbc(dbc);
 
 		o = OPER("", 255);
-	    ensure (SQL_SUCCESS == SQLGetInfo(*hdbc, type, ODBC_BUF(o)));
+	    ensure (SQL_SUCCESS == SQLGetInfo(*hdbc, type, ODBC_STR_BUF(o)));
 	}
 	catch (const std::exception& ex) {
 		XLL_ERROR(ex.what());

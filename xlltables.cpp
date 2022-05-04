@@ -99,15 +99,16 @@ LPOPER WINAPI xll_odbc_tables(HANDLEX h, SQLTCHAR* cat, SQLTCHAR* schem, SQLTCHA
 
 		ensure (SQL_SUCCEEDED(SQLTables(stmt, cat, SQL_NTS, schem, SQL_NTS, name, SQL_NTS, type, SQL_NTS)) || ODBC_ERROR(stmt));
 
-		OPER row(1, 5);
-		for (WORD i = 0; i < 5; ++i) {
-			row[i] = OPER("", 255);
-			//SQLLEN r0 = 254;
-			ensure (SQL_SUCCEEDED(SQLBindCol(stmt, i + 1, SQL_C_CHAR, ODBC_BUF_(SQLLEN, row[i]))) || ODBC_ERROR(stmt));
-			//row[i].val.str[0] = (SQLTCHAR)r0;
-		}
 
 		while (SQL_SUCCEEDED(SQLFetch(stmt)) || ODBC_ERROR(stmt)) {
+			OPER row(1, 5);
+			for (WORD i = 0; i < 5; ++i) {
+				row[i] = OPER("", 255);
+				row[i] = GetData(stmt, i, SQL_C_CHAR, row[i].val.str[0] - 1);
+				//SQLLEN r0 = 254;
+				//ensure (SQL_SUCCEEDED(SQLBindCol(stmt, i + 1, SQL_C_CHAR, ODBC_STR_BUF_(SQLLEN, row[i]))) || ODBC_ERROR(stmt));
+				//row[i].val.str[0] = (SQLTCHAR)r0;
+			}
 			o.push_back(row);
 		}
 	}

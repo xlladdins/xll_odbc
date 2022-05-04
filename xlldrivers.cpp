@@ -30,7 +30,7 @@ LPOPER WINAPI xll_odbc_drivers(void)
 		r[0] = OPER("", 255);
 		r[1] = OPER("", 255);
 
-		while (SQL_NO_DATA != SQLDrivers(ODBC::Env(), SQL_FETCH_NEXT, ODBC_BUF(r[0]), ODBC_BUF(r[1]))) {
+		while (SQL_NO_DATA != SQLDrivers(ODBC::Env(), SQL_FETCH_NEXT, ODBC_STR_BUF(r[0]), ODBC_STR_BUF(r[1]))) {
 			wchar_t* pr(r[1].val.str);
 			// "char\0char\0\0" -> "char;char;\0"
 			for (WORD i = 1; i <= pr[0]; ++i) {

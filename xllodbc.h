@@ -1,14 +1,18 @@
 // xllodbc.h
 //#define EXCEL12
-#include "xll/xll/xll.h"
 #include "odbc.h"
+#include "xll/xll/xll.h"
+
+#ifndef CATEGORY
+#define CATEGORY "SQL"
+#endif
 
 template<enum ODBC::SQL_HANDLE T>
 inline bool ODBC_ERROR(ODBC::Handle<T>& h)
 {
-	auto msg = h.GetDiagRec();
-	if (msg.length()) {
-		MessageBox(0, h.GetDiagRec().c_str(), L"Error", MB_OK);
+	auto msg = GetDiagRec(h);
+	if (msg.size() and msg[0].length()) {
+		MessageBox(0, msg[0].c_str(), L"Error", MB_OK);
 		return true;
 	}
 
@@ -43,7 +47,7 @@ namespace xll {
 				SQLTCHAR len = static_cast<SQLTCHAR>(size);
 				o = OPER("", len + 1);
 				o.val.str[0] = len;
-				ret = SQLGetData(stmt, n + 1, type, ODBC_BUF_(SQLLEN, o));
+				ret = SQLGetData(stmt, n + 1, type, ODBC_STR_BUF_(SQLLEN, o));
 			}
 			break;
 		case SQL_INTEGER:

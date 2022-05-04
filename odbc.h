@@ -1,5 +1,8 @@
 // odbc.h - platform independent ODBC code
 #include "xll/xll/ensure.h"
+#include <vector>
+#define NOMINMAX
+//#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <sqlext.h>
 
@@ -38,6 +41,25 @@ X(TYPE_TIMESTAMP, SQL_TIMESTAMP_STRUCT, TIMESTAMP_STRUCT) \
 
 // SQL_C_NUMERIC, SQL_C_GUID, 
 
+#define SQL_DIAG_HEADER_FIELDS(X) \
+X(CURSOR_ROW_COUNT, SQLLEN, "This field contains the count of rows in the cursor. Its semantics depend on the SQLGetInfo information types SQL_DYNAMIC_CURSOR_ATTRIBUTES2, SQL_FORWARD_ONLY_CURSOR_ATTRIBUTES2, SQL_KEYSET_CURSOR_ATTRIBUTES2, and SQL_STATIC_CURSOR_ATTRIBUTES2, which indicate which row counts are available for each cursor type (in the SQL_CA2_CRC_EXACT and SQL_CA2_CRC_APPROXIMATE bits).\nThe contents of this field are defined only for statement handles and only after SQLExecute, SQLExecDirect, or SQLMoreResults has been called. Calling SQLGetDiagField with a DiagIdentifier of SQL_DIAG_CURSOR_ROW_COUNT on other than a statement handle will return SQL_ERROR.") \
+X(DYNAMIC_FUNCTION, SQLCHAR*, "This is a string that describes the SQL statement that the underlying function executed. (See "Values of the Dynamic Function fields, " later in this section, for specific values.) The contents of this field are defined only for statement handles and only after a call to SQLExecute, SQLExecDirect, or SQLMoreResults. Calling SQLGetDiagField with a DiagIdentifier of SQL_DIAG_DYNAMIC_FUNCTION on other than a statement handle will return SQL_ERROR. The value of this field is undefined before a call to SQLExecute or SQLExecDirect.") \
+X(DYNAMIC_FUNCTION_CODE, SQLINTEGER, "This is a numeric code that describes the SQL statement that was executed by the underlying function. (See "Values of the Dynamic Function Fields, " later in this section, for specific value.) The contents of this field are defined only for statement handles and only after a call to SQLExecute, SQLExecDirect, or SQLMoreResults. Calling SQLGetDiagField with a DiagIdentifier of SQL_DIAG_DYNAMIC_FUNCTION_CODE on other than a statement handle will return SQL_ERROR. The value of this field is undefined before a call to SQLExecute or SQLExecDirect.") \
+X(NUMBER, SQLINTEGER, "The number of status records that are available for the specified handle.") \
+X(RETURNCODE, SQLRETURN, "Return code returned by the function. For a list of return codes, see Return Codes. The driver does not have to implement SQL_DIAG_RETURNCODE; it is always implemented by the Driver Manager. If no function has yet been called on the Handle, SQL_SUCCESS will be returned for SQL_DIAG_RETURNCODE.") \
+X(ROW_COUNT, SQLLEN, "The number of rows affected by an insert, delete, or update performed by SQLExecute, SQLExecDirect, SQLBulkOperations, or SQLSetPos. It is driver-defined after a cursor specification has been executed. The contents of this field are defined only for statement handles. Calling SQLGetDiagField with a DiagIdentifier of SQL_DIAG_ROW_COUNT on other than a statement handle will return SQL_ERROR. The data in this field is also returned in the RowCountPtr argument of SQLRowCount. The data in this field is reset after every nondiagnostic function call, whereas the row count returned by SQLRowCount remains the same until the statement is set back to the prepared or allocated state.") \
+
+#define SQL_DIAG_RECORD_FIELDS(X) \
+X(CLASS_ORIGIN, SQLCHAR*, "A string that indicates the document that defines the class portion of the SQLSTATE value in this record. Its value is "ISO 9075" for all SQLSTATEs defined by Open Group and ISO call-level interface. For ODBC-specific SQLSTATEs (all those whose SQLSTATE class is "IM"), its value is "ODBC 3.0".") \
+X(COLUMN_NUMBER, SQLINTEGER, "If the SQL_DIAG_ROW_NUMBER field is a valid row number in a rowset or a set of parameters, this field contains the value that represents the column number in the result set or the parameter number in the set of parameters. Result set column numbers always start at 1; if this status record pertains to a bookmark column, the field can be zero. Parameter numbers start at 1. It has the value SQL_NO_COLUMN_NUMBER if the status record is not associated with a column number or parameter number. If the driver cannot determine the column number or parameter number that this record is associated with, this field has the value SQL_COLUMN_NUMBER_UNKNOWN.\nThe contents of this field are defined only for statement handles.") \
+X(CONNECTION_NAME, SQLCHAR*, "A string that indicates the name of the connection that the diagnostic record relates to. This field is driver-defined. For diagnostic data structures associated with the environment handle and for diagnostics that do not relate to any connection, this field is a zero-length string.") \
+X(MESSAGE_TEXT, SQLCHAR*, "An informational message on the error or warning. This field is formatted as described in Diagnostic Messages. There is no maximum length to the diagnostic message text.") \
+X(NATIVE, SQLINTEGER, "A driver/data source-specific native error code. If there is no native error code, the driver returns 0.") \
+X(ROW_NUMBER, SQLLEN, "This field contains the row number in the rowset, or the parameter number in the set of parameters, with which the status record is associated. Row numbers and parameter numbers start with 1. This field has the value SQL_NO_ROW_NUMBER if this status record is not associated with a row number or parameter number. If the driver cannot determine the row number or parameter number that this record is associated with, this field has the value SQL_ROW_NUMBER_UNKNOWN.\nThe contents of this field are defined only for statement handles.") \
+X(SERVER_NAME, SQLCHAR*, "A string that indicates the server name that the diagnostic record relates to. It is the same as the value returned for a call to SQLGetInfo with the SQL_DATA_SOURCE_NAME option. For diagnostic data structures associated with the environment handle and for diagnostics that do not relate to any server, this field is a zero-length string.") \
+X(SUBCLASS_ORIGIN, SQLCHAR*, "A string with the same format and valid values as SQL_DIAG_CLASS_ORIGIN, that identifies the defining portion of the subclass portion of the SQLSTATE code. The ODBC-specific SQLSTATES for which "ODBC 3.0" is returned include the following:") \
+//X(SQLSTATE, SQLCHAR*, "A five-character SQLSTATE diagnostic code. For more information, see SQLSTATEs.") \
+
 namespace ODBC {
 
 	// SQL_C_TYPE::CHAR = SQL_C_TYPE_CHAR, ...
@@ -53,17 +75,19 @@ namespace ODBC {
 	{
 		return &t;
 	}
-	template<class T>
-	inline SQLLEN Len(T& t)
-	{
-		return sizeof(t);
-	}
 	// counted string
 	template<class SQLTCHAR>
 	inline SQLTCHAR* Ptr(SQLTCHAR* str)
 	{
 		return str + 1;
 	}
+
+	template<class T>
+	inline SQLLEN Len(T& t)
+	{
+		return sizeof(t);
+	}
+	// counted string
 	template<class SQLTCHAR>
 	inline SQLLEN Len(SQLTCHAR* str)
 	{
@@ -75,7 +99,7 @@ namespace ODBC {
 	ODBC_C_DATA_TYPES(X_)
 #undef X_
 
-	// pointer to U sets t in destructor
+	// pointer to U sets t[0] in destructor
 	template<class U>
 	class LenTPtr {
 		SQLTCHAR* t;
@@ -86,11 +110,7 @@ namespace ODBC {
 		{ }
 		~LenTPtr()
 		{
-			//if (len > std::numeric_limits<SQLTCHAR>::max()) {
-			//	throw std::runtime_error(__FUNCTION__ ": length too long");
-			//}
-
-			t[0] = static_cast<SQLTCHAR>(len);
+			t[0] = len > std::numeric_limits<SQLTCHAR>::max() ? 0 : static_cast<SQLTCHAR>(len);
 		}
 		operator U* ()
 		{
@@ -109,37 +129,89 @@ namespace ODBC {
 	}
 
 #define ODBC_STR(o) o.val.str + 1, o.val.str[0]
-#define ODBC_BUF(o) ODBC_STR(o), ODBC::LenPtr<SQLSMALLINT>(o.val.str)
-#define ODBC_BUF_(T, o) ODBC_STR(o), ODBC::LenPtr<T>(o.val.str)
+#define ODBC_STR_BUF(o) ODBC_STR(o), ODBC::LenPtr<SQLSMALLINT>(o.val.str)
+#define ODBC_STR_BUF_(T, o) ODBC_STR(o), ODBC::LenPtr<T>(o.val.str)
 
+#define ODBC_PTR_LEN(x) ODBC::Ptr(x), ODBC::Len(x)
+#define ODBC_PTR_LEN_BUF(U, x) ODBC_PTR_LEN(x), ODBC::LenPtr<U>(x)
+
+	// https://docs.microsoft.com/en-us/sql/odbc/reference/syntax/sqlgetdiagrec-function
 	struct DiagRec {
 		SQLTCHAR state[6] = { 0 };
 		SQLTCHAR message[SQL_MAX_MESSAGE_LENGTH] = { 0 };
 		SQLSMALLINT len;
 		SQLINTEGER error;
+		SQLSMALLINT type;
+		SQLHANDLE h;
+
+		DiagRec(SQLSMALLINT type, SQLHANDLE h)
+			: type(type), h(h)
+		{ }
+		DiagRec(DiagRec&) = delete;
+		DiagRec& operator=(DiagRec&) = delete;
+		~DiagRec()
+		{ }
 		std::basic_string<SQLTCHAR> to_string() const
 		{
 			std::basic_string<SQLTCHAR> s(state);
+
 			s.append({ ':', ' ' });
 			s.append(message, len);
 
 			return s;
 		}
-		SQLRETURN Get(SQLSMALLINT type, SQLHANDLE h, SQLSMALLINT n)
+		// Get one record
+		SQLRETURN Get(SQLSMALLINT n)
 		{
 			return SQLGetDiagRec(type, h, n, state, &error, message, SQL_MAX_MESSAGE_LENGTH, &len);
 		}
-		std::basic_string<SQLTCHAR> Get(SQLSMALLINT type, SQLHANDLE h)
+		// Get all records
+		std::vector<std::basic_string<SQLTCHAR>> Get()
 		{
-			std::basic_string<SQLTCHAR> s;
+			std::vector<std::basic_string<SQLTCHAR>> s;
 
-			for (SQLSMALLINT i = 1; SQL_SUCCEEDED(Get(type, h, i)); ++i) {
-				s.append(to_string());
-				s.append({ '\n' });
+			for (SQLSMALLINT i = 1; SQL_SUCCEEDED(Get(i)); ++i) {
+				s.push_back(to_string());
 			}
 
 			return s;
 		}
+	};
+
+	// https://docs.microsoft.com/en-us/sql/odbc/reference/syntax/sqlgetdiagfield-function
+	template<class U>
+	inline SQLRETURN GetDiagField(SQLSMALLINT HandleType, SQLHANDLE Handle, SQLSMALLINT RecNumber, SQLSMALLINT DiagIdentifier, U& u)
+	{
+		return SQLGetDiagField(HandleType, Handle, RecNumber, DiagIdentifier, Ptr(u), Len(u), LenPtr<SQLSMALLINT>(u));
+	}
+	class DiagField {
+		SQLSMALLINT type;
+		SQLHANDLE h;
+	public:
+		DiagField(SQLSMALLINT type, SQLHANDLE h)
+			: type(type), h(h)
+		{ }
+		DiagField(const DiagField&) = delete;
+		DiagField& operator=(const DiagField&) = delete;
+		~DiagField()
+		{ }
+		template<class U>
+		U Get(SQLSMALLINT n, SQLSMALLINT id)
+		{
+			U u;
+
+			GetDiagField<U>(type, h, n, id, u);
+
+			return u;
+		}
+		/*
+		// s points to counted, allocated memory
+		SQLRETURN Get(SQLSMALLINT n, SQLSMALLINT id, SQLTCHAR* s)
+		{
+			return 0; // GetDiagField(type, h, n, id, s);
+		}
+		*/
+		
 	};
 
 	enum class SQL_HANDLE {
@@ -177,26 +249,16 @@ namespace ODBC {
 		{
 			return h;
 		}
-
-		// https://docs.microsoft.com/en-us/sql/odbc/reference/syntax/sqlgetdiagrec-function
-		std::basic_string<SQLTCHAR> GetDiagRec()
-		{
-			DiagRec rec;
-
-			return rec.Get(type(), *this);
-		}
 		
-		// https://docs.microsoft.com/en-us/sql/odbc/reference/syntax/sqlgetdiagfield-function
-		SQLRETURN GetDiagField(
-			SQLSMALLINT     RecNumber,
-			SQLSMALLINT     DiagIdentifier,
-			SQLPOINTER      DiagInfoPtr,
-			SQLSMALLINT     BufferLength,
-			SQLSMALLINT*    StringLengthPtr)
-		{
-			return SQLGetDiagField(type(), *this, RecNumber, DiagIdentifier, DiagInfoPtr, BufferLength, StringLengthPtr);
-		}
 	};
+
+	template<enum SQL_HANDLE T>
+	inline auto GetDiagRec(Handle<T>& h)
+	{
+		DiagRec rec(h.type(), h);
+
+		return rec.Get();
+	}
 
 	// Environment singleton
 	class Env {
@@ -221,6 +283,7 @@ namespace ODBC {
 
 	class Dbc : public Handle<SQL_HANDLE::DBC> {
         SQLTCHAR connect_[1024] = { 0 };
+		using cstr = const SQLTCHAR*;
 	public:
 		Dbc()
             : Handle<SQL_HANDLE::DBC>(Env())
